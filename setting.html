@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body class="menu">
+
+<h2>الإعدادات</h2>
+
+<label>🔊 صوت الحركة
+<input type="checkbox" id="moveToggle" checked>
+</label>
+
+<label>🎵 موسيقى الخلفية
+<input type="checkbox" id="musicToggle" checked>
+</label>
+
+<button onclick="saveSettings()">حفظ</button>
+
+<script>
+function saveSettings(){
+  localStorage.setItem("moveSound", moveToggle.checked);
+  localStorage.setItem("music", musicToggle.checked);
+  alert("تم الحفظ");
+}
+</script>
+
+</body>
+</html>

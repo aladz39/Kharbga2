@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>خربقة - تحميل</title>
+  <style>
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f2f0ea;
+      font-family: Arial, sans-serif;
+      user-select: none;
+    }
+    #logo {
+      width: 220px;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <img id="logo" src="logo.png" alt="خربقة" />
+
+  <script>
+    // بعد 5 ثواني ينتقل تلقائياً إلى index.html
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 5000);
+  </script>
+
+</body>
+</html>

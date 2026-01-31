@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+  body {
+    background: #8b7a50;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; align-items: center;
+    color: #fff;
+  }
+  h1 {
+    margin: 20px 0 10px;
+  }
+  #home, #game {
+    width: 320px;
+  }
+  .menu-btn {
+    background: #5a4826;
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    text-align: center;
+    font-size: 18px;
+    transition: background 0.3s;
+  }
+  .menu-btn:hover {
+    background: #7d662d;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(7, 40px);
+    grid-template-rows: repeat(7, 40px);
+    gap: 6px;
+    margin: 20px auto;
+  }
+  .hole {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(145deg, #c4b68e, #7d6b43);
+    border-radius: 50%;
+    box-shadow:
+      inset 0 2px 5px rgba(255,255,255,0.2),
+      inset 0 -2px 5px rgba(0,0,0,0.3),
+      2px 2px 5px rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .hole.center {
+    box-shadow:
+      inset 0 2px 10px rgba(255,255,255,0.5),
+      inset 0 -2px 10px rgba(0,0,0,0.5),
+      3px 3px 10px rgba(0,0,0,0.4);
+  }
+  .piece {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    position: absolute;
+    top: 5px; left: 5px;
+    box-shadow:
+      0 0 5px rgba(0,0,0,0.7),
+      inset 0 3px 5px rgba(255,255,255,0.3);
+  }
+  .piece.red {
+    background: radial-gradient(circle at 12px 12px, #d94242, #8b2f2f);
+  }
+  .piece.blue {
+    background: radial-gradient(circle at 12px 12px, #2b5fcf, #1c2e72);
+  }
+  .selected {
+    outline: 3px solid #fefefe;
+    outline-offset: -3px;
+  }
+  #status, #levelBox {
+    margin: 10px 0;
+    min-height: 24px;
+    font-weight: bold;
+    text-align: center;
+  }
+  #backBtn {
+    margin-top: 10px;
+    padding: 8px 14px;
+    background: #5a4826;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+  }
+  #backBtn:hover {
+    background: #7d662d;
+  }
+</style>
+</head>
+<body>
+
+<div id="home">
+  <div class="menu-btn" onclick="selectMode('ai')">🤖 اللعب ضد الكمبيوتر</div>
+  <div class="menu-btn" onclick="selectMode('offline')">👥 اللعب مع صديق (على نفس الجهاز)</div>
+<div class="menu-btn" onclick="selectMode('online')">🌍 اللعب أونلاين</div>
+
+<img src="https://j.top4top.io/p_368377kca0.png" alt="شعار اللعبة" style="
+  display: block;
+  width: 150px;
+  margin: 15px auto 40px auto;
+  opacity: 0.9;
+"/>
+
+<div id="helpModal" style="
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.9);
+  color: white;
+  padding: 15px 20px;
+  width: 300px;
+  height: 220px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(255,255,255,0.3);
+  z-index: 1001;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-y: auto;
+  box-sizing: border-box;
+">
+  <button id="closeHelp" style="
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+  ">✖</button>
+
+  <h3 style="margin-top: 0; text-align:center; font-size: 16px;">🎮 طريقة اللعب</h3>
+  <p>
+    اللعبة بين خصمين بلونين مختلفين.<br>
+    كل لاعب يملك <b>24 حصاة</b>.<br>
+    يتم وضع <b>حجرتين في كل دور</b> بالتناوب حتى تمتلئ الخانات.<br>
+    بعد اكتمال الرمي يبدأ التحريك في الاتجاهات:<br>
+    ⬆️ فوق — ⬇️ تحت — ⬅️ يسار — ➡️ يمين<br>
+    يتم أكل حصاة الخصم عند <b>حصرها بين حصاتين لك</b>.<br>
+    اللاعب الذي يأكل جميع أحجار خصمه يفوز.
+  </p>
+  <hr style="border-color: rgba(255,255,255,0.3);" />
+  <h3 style="text-align:center; font-size: 16px;">🎮 How To Play</h3>
+  <p>
+    The game is between two opponents with different colors.<br>
+    Each player has <b>24 stones</b>.<br>
+    Players place <b>two stones per turn</b> alternately until the board is filled.<br>
+    After placement, movement begins in four directions:<br>
+    ⬆️ Up — ⬇️ Down — ⬅️ Left — ➡️ Right<br>
+    You capture an opponent’s stone by <b>trapping it between two of yours</b>.<br>
+    The player who captures all opponent stones wins.
+</div>
+</div>
+  </html
+</div>
+<div id="designerSignature" style="display:none; position: fixed; bottom: 10px; right: 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: rgba(115, 80, 60, 0.7); background: rgba(255, 255, 255, 0.3); padding: 6px 12px; border-radius: 10px; box-shadow: 0 0 5px rgba(115, 80, 60, 0.3); user-select: none; z-index: 1200; pointer-events: none;">
+  
+</div>
+<div id="game" style="display:none;">
+  <div id="levelBox"></div>
+  <div id="status"></div>
+  <div id="board"></div>
+  <div id="backBtn" onclick="goHome()">⬅ العودة للرئيسية</div>
+</div>
+
+<audio id="moveSound" src="https://actions.google.com/sounds/v1/foley/footsteps_on_dirt.ogg"></audio>
+
+<script type="module">
+// استيراد supabase client من CDN
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+// تهيئة اتصال Supabase مع بياناتك الخاصة
+const SUPABASE_URL = 'https://czmvghwmiaxxyykgcfaj.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6bXZnaHdtaWF4eHl5a2djZmFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3MjY3MjQsImV4cCI6MjA4NTMwMjcyNH0.-A_XCsnqg59s5pLbI1klpicK4GvG1GuEOV8U04W3pE0';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ======== متغيرات اللعبة ========
+let mode = ''; // 'ai' or 'offline' or 'online'
+let playerName = 'player' + Math.floor(Math.random() * 10000);
+let roomId = null;
+let isPlayerTurn = true;
+
+const boardSize = 49; // 7x7
+let boardState = Array(boardSize).fill(null);
+let currentPlayer = 'red'; // الأحمر يبدأ دائماً
+let placementPhase = true;
+let piecesCount = { red: 24, blue: 24 };
+let placementsThisTurn = 0;
+
+const boardDiv = document.getElementById('board');
+const statusText = document.getElementById('status');
+const levelBox = document.getElementById('levelBox');
+const moveSound = document.getElementById('moveSound');
+
+const holes = [];
+let selected = null;
+
+// ========== إعداد اللوحة ===========
+function setupBoard() {
+  boardDiv.innerHTML = '';
+  holes.length = 0;
+  for (let i = 0; i < boardSize; i++) {
+    const hole = document.createElement('div');
+    hole.className = 'hole';
+    if (i === 24) hole.classList.add('center');
+    hole.dataset.index = i;
+    hole.onclick = () => handleClick(i);
+    boardDiv.appendChild(hole);
+    holes.push(hole);
+  }
+  drawBoard();
+}
+
+// ========== رسم اللوحة ===========
+function drawBoard() {
+  holes.forEach((hole, i) => {
+    hole.innerHTML = '';
+    hole.classList.remove('selected');
+    if (boardState[i]) {
+      const piece = document.createElement('div');
+      piece.className = 'piece ' + boardState[i];
+      hole.appendChild(piece);
+    }
+  });
+  if (selected !== null) holes[selected].classList.add('selected');
+  updateStatus();
+}
+
+// ========== تحديث الحالة ===========
+function updateStatus() {
+  if (placementPhase) {
+    statusText.textContent = `${currentPlayer === 'red' ? 'أنت الأحمر' : 'الخصم الأزرق'}: ضع حجرتين`;
+  } else {
+    statusText.textContent = isPlayerTurn ? 'دورك' : 'دور الخصم';
+  }
+  if (mode === 'online') {
+    levelBox.textContent = `اللعب أونلاين`;
+  } else {
+    levelBox.textContent = '';
+  }
+}
+
+// ========== التعامل مع النقر ===========
+async function handleClick(i) {
+  if (mode === 'online' && !isPlayerTurn) return;
+  if (mode === 'ai' && currentPlayer === 'blue') return; // منع تحريك المستخدم عندما دور الكمبيوتر
+  if (placementPhase) {
+    placePiece(i);
+  } else {
+    movePiece(i);
+  }
+}
+
+// ========== وضع قطعة ===========
+async function placePiece(i) {
+  if (boardState[i] || i === 24) return;
+
+  boardState[i] = currentPlayer;
+  piecesCount[currentPlayer]--;
+  placementsThisTurn++;
+
+  playMoveSound();
+  drawBoard();
+
+  if (placementsThisTurn === 2) {
+    placementsThisTurn = 0;
+    if (piecesCount.red <= 0 && piecesCount.blue <= 0) {
+      placementPhase = false;
+      currentPlayer = 'red';
+      statusText.textContent = 'بدأت المعركة! دورك.';
+      isPlayerTurn = true;
+    } else {
+      switchTurn();
+      if (mode === 'ai' && currentPlayer === 'blue') {
+        setTimeout(aiPlacePieces, 800);
+      }
+    }
+  }
+
+  if (mode === 'online') await sendGameState();
+}
+
+// ====== وضع حجارة الكمبيوتر (حجرتين) =======
+async function aiPlacePieces() {
+  if (currentPlayer !== 'blue' || !placementPhase) return;
+
+  for (let count = 0; count < 2; count++) { // حط حجرتين
+    let attempts = 0;
+    while (attempts < 100) {
+      const pos = Math.floor(Math.random() * boardSize);
+      if (!boardState[pos] && pos !== 24) {
+        boardState[pos] = 'blue';
+        piecesCount.blue--;
+        placementsThisTurn++;
+        playMoveSound();
+        drawBoard();
+        break;
+      }
+      attempts++;
+    }
+    await new Promise(res => setTimeout(res, 600)); // تأخير بسيط بين الحجار
+  }
+
+  if (piecesCount.blue <= 0 && piecesCount.red <= 0) {
+    placementPhase = false;
+    currentPlayer = 'red'; // يبدأ الأحمر في التحريك
+    placementsThisTurn = 0;
+    statusText.textContent = 'بدأت المعركة! دورك.';
+    isPlayerTurn = true;
+  } else {
+    switchTurn();
+  }
+}
+
+// ========== تحريك قطعة ===========
+async function movePiece(i) {
+  if (selected === null) {
+    if (boardState[i] === currentPlayer) {
+      selected = i;
+      drawBoard();
+    }
+    return;
+  }
+
+  if (!isValidMove(selected, i)) {
+    selected = null;
+    drawBoard();
+    return;
+  }
+
+  boardState[i] = currentPlayer;
+  boardState[selected] = null;
+  selected = null;
+
+  playMoveSound();
+  drawBoard();
+  capturePieces(i);
+
+  if (checkWin()) {
+    alert(currentPlayer === 'red' ? 'فزت!' : 'خسرت!');
+    resetGame();
+    return;
+  }
+
+  switchTurn();
+
+  if (mode === 'online') await sendGameState();
+  if (mode === 'ai' && currentPlayer === 'blue') {
+    setTimeout(aiMove, 800);
+  }
+}
+
+// ========== تحقق من صحة الحركة ===========
+function isValidMove(from, to) {
+  if (boardState[to]) return false;
+  const diff = Math.abs(to - from);
+  return diff === 1 || diff === 7;
+}
+
+// ========== الالتقاط ===========
+function capturePieces(pos) {
+  const directions = [1, -1, 7, -7];
+  directions.forEach(d => {
+    const mid = pos + d;
+    const end = pos + 2 * d;
+    if (
+      boardState[mid] && boardState[mid] !== currentPlayer &&
+      boardState[end] === currentPlayer
+    ) {
+      boardState[mid] = null;
+    }
+  });
+}
+
+// ========== التبديل بين اللاعبين ===========
+function switchTurn() {
+  placementsThisTurn = 0;
+  currentPlayer = currentPlayer === 'red' ? 'blue' : 'red';
+  if (mode === 'online') {
+    isPlayerTurn = !isPlayerTurn;
+  } else {
+    isPlayerTurn = currentPlayer === 'red';
+  }
+  drawBoard();
+}
+
+// ========== تحقق من الفوز ===========
+function checkWin() {
+  if (!boardState.includes('red')) return true;
+  if (!boardState.includes('blue')) return true;
+  return false;
+}
+
+// ========== AI بسيط ===========
+function aiMove() {
+  if (currentPlayer !== 'blue') return;
+
+  for (let i = 0; i < boardSize; i++) {
+    if (boardState[i] === 'blue') {
+      const moves = [i + 1, i - 1, i + 7, i - 7];
+      for (const m of moves) {
+        if (m >= 0 && m < boardSize && !boardState[m]) {
+          boardState[m] = 'blue';
+          boardState[i] = null;
+          capturePieces(m);
+          switchTurn();
+          drawBoard();
+          setTimeout(() => {
+            if (currentPlayer === 'blue') {
+              aiMove();
+            }
+          }, 600);
+          return;
+        }
+      }
+    }
+  }
+  // لو ما لقى حركة، يمرر الدور
+  switchTurn();
+}
+
+// ========== إرسال حالة اللعبة للسيرفر ===========
+async function sendGameState() {
+  if (!roomId) return;
+  const { error } = await supabase
+    .from('rooms')
+    .update({
+      board: JSON.stringify(boardState),
+      turn: currentPlayer
+    })
+    .eq('id', roomId);
+  if (error) console.error('خطأ في إرسال حالة اللعبة:', error);
+}
+
+// ========== الاستماع لتحديثات اللعبة ===========
+function listenGameState() {
+  if (!roomId) return;
+  supabase
+    .from(`rooms:id=eq.${roomId}`)
+    .on('UPDATE', payload => {
+      const newBoard = JSON.parse(payload.new.board);
+      const newTurn = payload.new.turn;
+
+      boardState = newBoard;
+      currentPlayer = newTurn;
+      isPlayerTurn = (playerName === (currentPlayer === 'red' ? payload.new.player1 : payload.new.player2));
+
+      drawBoard();
+    })
+    .subscribe();
+}
+
+// ========== الانضمام للعبة أونلاين ===========
+async function joinOnlineGame() {
+  const { data: rooms, error } = await supabase
+    .from('rooms')
+    .select('*')
+    .is('player2', null)
+    .limit(1);
+
+  if (error) {
+    console.error('خطأ في جلب الغرف:', error);
+    return;
+  }
+
+  if (rooms.length === 0) {
+    const { data, error: insertError } = await supabase
+      .from('rooms')
+      .insert([{
+        player1: playerName,
+        player2: null,
+        board: JSON.stringify(boardState),
+        turn: 'red'
+      }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('خطأ في إنشاء الغرفة:', insertError);
+      return;
+    }
+
+    roomId = data.id;
+    isPlayerTurn = true;
+    statusText.textContent = 'انتظر لاعب آخر...';
+    listenGameState();
+  } else {
+    roomId = rooms[0].id;
+    await supabase
+      .from('rooms')
+      .update({ player2: playerName })
+      .eq('id', roomId);
+
+    isPlayerTurn = false;
+    listenGameState();
+    statusText.textContent = 'دور الخصم';
+  }
+}
+
+// ========== بدء اللعبة حسب الوضع ===========
+function startGame() {
+  setupBoard();
+  if (mode === 'online') {
+    joinOnlineGame();
+  } else {
+    isPlayerTurn = true;
+    drawBoard();
+    if (mode === 'ai' && currentPlayer === 'blue' && placementPhase) {
+      setTimeout(aiPlacePieces, 800); // الكمبيوتر يبدأ بوضع حجاره بعدك لو بدأ هو أزرق
+    }
+  }
+}
+
+// ========== اختيار الوضع من الواجهة ===========
+function selectMode(selectedMode) {
+  mode = selectedMode;
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
+  startGame();
+}
+
+// ========== العودة للرئيسية ===========
+function goHome() {
+  location.reload();
+}
+
+// ========== تشغيل صوت الحركة ===========
+function playMoveSound() {
+  moveSound.currentTime = 0;
+  moveSound.play();
+}
+
+// ===== بداية التطبيق =====
+window.selectMode = selectMode;
+window.goHome = goHome;
+
+</script
+function toggleInstructions(){
+  var box = document.getElementById("gameInstructions");
+  if(box.style.display === "block"){
+    box.style.display = "none";
+  } else {
+    box.style.display = "block";
+  }
+}
+</script>
+<!-- زر أيقونة طريقة اللعب -->
+<button id="helpBtn" style="
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,0,0,0.3);
+  z-index: 1000;
+">❓</button>
+<script>
+  const helpBtn = document.getElementById('helpBtn');
+  const helpModal = document.getElementById('helpModal');
+  const closeHelp = document.getElementById('closeHelp');
+
+  helpBtn.addEventListener('click', () => {
+    helpModal.style.display = 'block';
+  });
+
+  closeHelp.addEventListener('click', () => {
+    helpModal.style.display = 'none';
+  });
+
+  // إغلاق النافذة إذا ضغط المستخدم خارجها (اختياري)
+  window.addEventListener('click', (e) => {
+    if(e.target === helpModal){
+      helpModal.style.display = 'none';
+    }
+  });
+
+</body>
+</html>
+
+<!-- الموسيقى الخلفية -->
+<audio id="backgroundMusic" src="assets/Calmant.mp3" loop autoplay></audio>
+
+<html
