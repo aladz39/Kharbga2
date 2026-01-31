@@ -1,2 +1,0 @@
-# Kharbga2
-Game
